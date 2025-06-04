@@ -195,6 +195,8 @@ export class Handler extends EventEmitter {
       await this.prisma.deleteGive(tx.txid)
       throw new Error(`${msg}: ERROR: broadcast failed: ${e.message}`)
     }
+    // Reconcile UTXO set for WalletKey
+    await this.wallet.validateUtxos(fromUserId)
     // return broadcasted tx data
     return {
       txid: tx.txid,
@@ -260,6 +262,8 @@ export class Handler extends EventEmitter {
       // Broadcast the withdrawal to network
       const txid = await this.wallet.broadcastTx(tx)
       this.log(WALLET, `${msg}: accepted by network: ${txid}`)
+      // Reconcile UTXO set for WalletKey
+      await this.wallet.validateUtxos(userId)
       // Get the actual number of sats in the tx output to reply to user
       const outSats = tx.outputs[0].satoshis
       return {
