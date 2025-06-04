@@ -195,6 +195,15 @@ export class Handler extends EventEmitter {
       await this.prisma.deleteGive(tx.txid)
       throw new Error(`${msg}: ERROR: broadcast failed: ${e.message}`)
     }
+    try {
+      // Reconcile UTXO set for WalletKey
+      await this.wallet.validateUtxos(fromUserId)
+
+    } catch (e) {
+      // just warn to console for now
+      // will need a way to queue retries
+      this.log(MAIN, `processGiveCommand: WARN: ${e.message}`)
+    }
     // return broadcasted tx data
     return {
       txid: tx.txid,
@@ -260,16 +269,23 @@ export class Handler extends EventEmitter {
       // Broadcast the withdrawal to network
       const txid = await this.wallet.broadcastTx(tx)
       this.log(WALLET, `${msg}: accepted by network: ${txid}`)
-      // Get the actual number of sats in the tx output to reply to user
-      const outSats = tx.outputs[0].satoshis
-      return {
-        txid: tx.txid,
-        amount: Util.toXPI(outSats),
-      }
     } catch (e: any) {
       // If tx broadcast fails, delete the withdrawal database entry
       await this.prisma.deleteWithdrawal(tx.txid)
       throw new Error(`withdrawal broadcast failed: ${e.message}`)
+    }
+    // Reconcile UTXO set for WalletKey
+    try {
+      await this.wallet.validateUtxos(userId)
+    } catch (e) {
+      // just warn to console for now
+      // will need a way to queue retries
+      this.log(MAIN, `processWithdrawCommand: WARN: ${e.message}`)
+    }
+    // Get the actual number of sats in the tx output to reply to user
+    return {
+      txid: tx.txid,
+      amount: Util.toXPI(tx.outputs[0].satoshis),
     }
   }
   /**
