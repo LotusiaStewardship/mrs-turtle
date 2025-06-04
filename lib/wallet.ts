@@ -174,8 +174,7 @@ class WalletKey {
     this.utxos = utxos.map(utxo => WalletTools.toParsedUtxo(utxo))
   }
   /** Get the balance of the `WalletKey` by adding the value of all cached, in-memory UTXOs */
-  public async getBalance() {
-    this.utxos = await this.validateUtxos(this.utxos ?? [])
+  async getBalance() {
     return this.utxos.reduce((balance, utxo) => balance + Number(utxo.value), 0)
   }
   /**
@@ -199,7 +198,7 @@ class WalletKey {
    * @param utxos - The UTXOs to validate
    * @returns The validated UTXOs
    */
-  private async validateUtxos(utxos: Wallet.ParsedUtxo[]) {
+  async validateUtxos(utxos: Wallet.ParsedUtxo[]) {
     let result: UtxoState[]
     try {
       result = await this.chronik.validateUtxos(utxos)
@@ -344,6 +343,14 @@ export class WalletManager {
     } catch (e: any) {
       throw new Error(`loadKey: ${userId}: ${e.message}`)
     }
+  }
+  /**
+   * Reconcile UTXO set for the `WalletKey` of `userId`
+   * @param userId - The `userId` of the `WalletKey` to reconcile
+   */
+  validateUtxos = async (userId: string) => {
+    const walletKey = this.wallets.get(userId)
+    walletKey.utxos = await walletKey.validateUtxos(walletKey.utxos)
   }
   /** Update the WalletKey of `userId` with provided `accountId` */
   updateKey = (userId: string, oldAccountId: string, newAccountId: string) => {
