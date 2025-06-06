@@ -98,6 +98,36 @@ export class Database {
       throw new Error(`updateUserWAlletKey: ${e.message}`)
     }
   }
+  /**
+   * Validates that the provided `AccountUtxo`s are in the database
+   * @param utxos - The `AccountUtxo`s to validate
+   * @returns All `AccountUtxo`s that are not in the database
+   */
+  reconcileDeposits = async (
+    utxos: Wallet.AccountUtxo[],
+  ): Promise<Wallet.AccountUtxo[]> => {
+    try {
+      return await this.prisma.$transaction(async tx => {
+        const newDeposits: Wallet.AccountUtxo[] = []
+        for (const utxo of utxos) {
+          const deposit = await tx.deposit.findFirst({
+            where: { txid: utxo.txid, outIdx: utxo.outIdx },
+          })
+          if (!deposit) {
+            newDeposits.push({
+              txid: utxo.txid,
+              outIdx: utxo.outIdx,
+              value: utxo.value,
+              userId: utxo.userId,
+            })
+          }
+        }
+        return newDeposits
+      })
+    } catch (e: any) {
+      throw new Error(`reconcileDeposits: ${e.message}`)
+    }
+  }
   /** Get Deposits for all users of all platforms */
   getDeposits = async () => {
     try {
