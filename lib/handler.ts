@@ -64,12 +64,7 @@ export class Handler extends EventEmitter {
     this.log(MAIN, `reconciling deposits with UTXO set`)
     try {
       const utxos = this.wallet.getUtxos()
-      const deposits = await this.prisma.getDeposits()
-      const newDeposits = utxos.filter(u => {
-        return (
-          deposits.findIndex(d => u.txid == d.txid && u.outIdx == d.outIdx) < 0
-        )
-      })
+      const newDeposits = await this.prisma.reconcileDeposits(utxos)
       for (const deposit of newDeposits) {
         await this.saveDeposit(deposit)
       }
