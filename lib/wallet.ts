@@ -373,9 +373,10 @@ export class WalletManager {
       outAddress?: string
       outSats: number
     },
-  ) => {
+  ): Promise<[Transaction, Wallet.ParsedUtxo[]]> => {
     const tx = new Transaction()
     const signingKeys: PrivateKey[] = []
+    const spentUtxos: Wallet.ParsedUtxo[] = []
     // wallets used to fund the transaction
     const userIds = this.accounts[fromAccountId]
     try {
@@ -384,6 +385,7 @@ export class WalletManager {
         signingKeys.push(wallet.signingKey)
         for (const utxo of wallet.utxos) {
           tx.addInput(WalletTools.toPKHInput(utxo, wallet.script))
+          spentUtxos.push(utxo)
           if (tx.inputAmount > outSats) {
             break
           }
@@ -419,13 +421,27 @@ export class WalletManager {
         const verified = tx.verify()
         switch (typeof verified) {
           case 'boolean':
-            return tx
+            return [tx, spentUtxos]
           case 'string':
             throw new Error(verified)
         }
       }
     } catch (e: any) {
       throw new Error(`genTx: ${e.message}`)
+    }
+  }
+  /** Remove the provided UTXOs from the `WalletKey` of `userId` */
+  removeUtxos = async (accountId: string, spentUtxos: Wallet.ParsedUtxo[]) => {
+    const userIds = this.accounts[accountId]
+    for (const userId of userIds) {
+      const walletKey = this.wallets.get(userId)
+      walletKey.utxos = walletKey.utxos.filter(
+        utxo =>
+          !spentUtxos.some(
+            spentUtxo =>
+              spentUtxo.txid === utxo.txid && spentUtxo.outIdx === utxo.outIdx,
+          ),
+      )
     }
   }
   /** Broadcast the provided tx for the provided userId */

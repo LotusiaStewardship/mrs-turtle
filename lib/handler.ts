@@ -168,7 +168,7 @@ export class Handler extends EventEmitter {
       ? BOT.USER.userId
       : (await this.validateAndGetIds(platform, toId)).userId
     // Give successful; broadcast tx and save to db
-    const tx = await this.wallet.genTx('give', {
+    const [tx, spentUtxos] = await this.wallet.genTx('give', {
       fromAccountId,
       toUserId,
       outSats,
@@ -195,10 +195,9 @@ export class Handler extends EventEmitter {
       await this.prisma.deleteGive(tx.txid)
       throw new Error(`${msg}: ERROR: broadcast failed: ${e.message}`)
     }
+    // Reconcile UTXO set for WalletKey
     try {
-      // Reconcile UTXO set for WalletKey
-      await this.wallet.validateUtxos(fromUserId)
-
+      await this.wallet.removeUtxos(fromAccountId, spentUtxos)
     } catch (e) {
       // just warn to console for now
       // will need a way to queue retries
@@ -247,7 +246,7 @@ export class Handler extends EventEmitter {
       return `insufficient balance: ${outSats} > ${balance}`
     }
     // Generate withdrawal tx
-    const tx = await this.wallet.genTx('withdraw', {
+    const [tx, spentUtxos] = await this.wallet.genTx('withdraw', {
       fromAccountId: accountId,
       outAddress,
       outSats,
@@ -276,7 +275,7 @@ export class Handler extends EventEmitter {
     }
     // Reconcile UTXO set for WalletKey
     try {
-      await this.wallet.validateUtxos(userId)
+      await this.wallet.removeUtxos(accountId, spentUtxos)
     } catch (e) {
       // just warn to console for now
       // will need a way to queue retries
