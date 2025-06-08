@@ -103,9 +103,22 @@ export class Telegram extends EventEmitter implements ITelegram {
       )
     }
   }
+  /**
+   * Sends a message to a Telegram chat
+   * @param chatId - The Telegram chat ID to send the message to
+   * @param message - The message content to send
+   * @returns Promise that resolves when the message is sent
+   */
   sendMessage = async (chatId: string, message: string) => {
     return await this.notifyUser(chatId, message)
   }
+  /**
+   * Sends a message to a Telegram chat when a deposit is received
+   * @param platformId - The Telegram chat ID to send the message to
+   * @param txid - The transaction ID of the deposit
+   * @param amount - The amount of the deposit
+   * @param balance - The balance of the user after the deposit
+   */
   sendDepositReceived = async (
     platformId: string,
     txid: string,
@@ -129,6 +142,10 @@ export class Telegram extends EventEmitter implements ITelegram {
     }
   }
 
+  /**
+   * Handles the balance command
+   * @param platformId - The Telegram chat ID to send the message to
+   */
   private handleBalanceCommand = async (platformId: string) => {
     try {
       const balance = await this.handler.processBalanceCommand(
@@ -148,6 +165,10 @@ export class Telegram extends EventEmitter implements ITelegram {
     }
   }
 
+  /**
+   * Handles the deposit command
+   * @param platformId - The Telegram chat ID to send the message to
+   */
   private handleDepositCommand = async (platformId: string) => {
     try {
       const address = await this.handler.processDepositCommand(
@@ -171,6 +192,17 @@ export class Telegram extends EventEmitter implements ITelegram {
     }
   }
 
+  /**
+   * Handles the give command
+   * @param chatId - The Telegram chat ID to send the message to
+   * @param replyToMessageId - The message ID to reply to
+   * @param fromId - The ID of the user giving the Lotus
+   * @param fromUsername - The username of the user giving the Lotus
+   * @param toId - The ID of the user receiving the Lotus
+   * @param toUsername - The username of the user receiving the Lotus
+   * @param value - The amount of Lotus to give
+   * @param isBotDonation - Whether the donation is to the bot
+   */
   private handleGiveCommand = async (
     chatId: number,
     replyToMessageId: number,
@@ -214,6 +246,12 @@ export class Telegram extends EventEmitter implements ITelegram {
     }
   }
 
+  /**
+   * Handles the withdraw command
+   * @param platformId - The Telegram chat ID to send the message to
+   * @param outAmount - The amount of Lotus to withdraw
+   * @param outAddress - The address to withdraw the Lotus to
+   */
   private handleWithdrawCommand = async (
     platformId: string,
     outAmount: string,
@@ -246,6 +284,11 @@ export class Telegram extends EventEmitter implements ITelegram {
     }
   }
 
+  /**
+   * Handles the link command
+   * @param platformId - The Telegram chat ID to send the message to
+   * @param secret - The secret to link the account to
+   */
   private handleLinkCommand = async (
     platformId: string,
     secret: string | undefined,
@@ -276,6 +319,10 @@ export class Telegram extends EventEmitter implements ITelegram {
     }
   }
 
+  /**
+   * Handles the backup command
+   * @param platformId - The Telegram chat ID to send the message to
+   */
   private handleBackupCommand = async (platformId: string) => {
     try {
       const mnemonic = await this.handler.processBackupCommand(
@@ -294,6 +341,10 @@ export class Telegram extends EventEmitter implements ITelegram {
     }
   }
 
+  /**
+   * Handles a direct message
+   * @param ctx - The context of the message
+   */
   private handleDirectMessage = async (ctx: Context) => {
     try {
       if (ctx.chat.type !== 'private') {
@@ -345,6 +396,10 @@ export class Telegram extends EventEmitter implements ITelegram {
     }
   }
 
+  /**
+   * Handles a group message
+   * @param ctx - The context of the message
+   */
   private handleGroupMessage = async (ctx: Context) => {
     try {
       const replyToMessageId = ctx.message.message_id
@@ -429,6 +484,10 @@ export class Telegram extends EventEmitter implements ITelegram {
     }
   }
 
+  /**
+   * Handles a temporal command
+   * @param ctx - The context of the message
+   */
   private handleTemporalCommand = async (ctx: Context) => {
     // ignore command if not sent in DM
     if (ctx.message.chat.type !== 'private') {
@@ -453,6 +512,10 @@ export class Telegram extends EventEmitter implements ITelegram {
     this.emit('temporalCommand', { command, data })
   }
 
+  /**
+   * Calculates the delay between replies
+   * @returns The delay in milliseconds
+   */
   private calcReplyDelay = () => {
     const now = Date.now()
     const delay = Math.floor(

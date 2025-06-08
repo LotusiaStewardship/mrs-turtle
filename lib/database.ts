@@ -128,14 +128,6 @@ export class Database {
       throw new Error(`reconcileDeposits: ${e.message}`)
     }
   }
-  /** Get Deposits for all users of all platforms */
-  getDeposits = async () => {
-    try {
-      return await this.prisma.deposit.findMany()
-    } catch (e: any) {
-      throw new Error(`getUserDeposits: ${e.message}`)
-    }
-  }
   /** Get `userId` and `accountId` for the specified `platformId` */
   getIds = async (platform: PlatformName, platformId: string) => {
     try {
