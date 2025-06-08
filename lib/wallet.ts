@@ -627,13 +627,14 @@ export class WalletManager {
     utxos: Wallet.ParsedUtxo[]
     inAddress: string
     signingKey: PrivateKey
-  }): Promise<Transaction> => {
+  }): Promise<[Transaction, Wallet.ParsedUtxo[]]> => {
     // set up transaction with base parameters
     const tx = new Transaction()
     tx.feePerByte(config.wallet.tx.feeRate)
     tx.change(changeAddress)
     // input address to script
     const inScript = Script.fromAddress(inAddress)
+    const spentUtxos: Wallet.ParsedUtxo[] = []
     // add utxos to inputs until sufficient input amount gathered
     for (const utxo of utxos) {
       tx.addInput(
@@ -647,6 +648,7 @@ export class WalletManager {
           script: inScript,
         }),
       )
+      spentUtxos.push(utxo)
       // if input amount is greater than total output value, break
       if (tx.inputAmount > Number(totalOutputValue)) {
         break
@@ -669,7 +671,7 @@ export class WalletManager {
     // TODO: add check for tx size (max is 100KB)
     // sign and return tx
     tx.sign(signingKey)
-    return tx
+    return [tx, spentUtxos]
   }
   static isValidAddress = (address: string) => Address.isValid(address)
   /**
