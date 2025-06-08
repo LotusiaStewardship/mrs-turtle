@@ -366,7 +366,7 @@ export class Handler extends EventEmitter {
         .filter(({ value }) => Number(value) >= 10_000_000000)
         // sort highest to lowest
         .sort((a, b) => Number(b.value) - Number(a.value))
-      const tx = await WalletManager.craftSendLotusTransaction({
+      const [tx, spentUtxos] = await WalletManager.craftSendLotusTransaction({
         outputs: asyncCollection(outputs), // 99 outputs + 1 change output = 100 outputs max
         totalOutputValue: outputs
           .reduce((acc, { sats }) => acc + Number(sats), 0)
@@ -376,7 +376,9 @@ export class Handler extends EventEmitter {
         inAddress: changeAddress,
         signingKey,
       })
-      return await this.wallet.broadcastTx(tx)
+      const txid = await this.wallet.broadcastTx(tx)
+      await this.wallet.removeUtxos(walletKey.accountId, spentUtxos)
+      return txid
     },
   }
   /**
