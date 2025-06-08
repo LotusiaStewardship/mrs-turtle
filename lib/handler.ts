@@ -5,7 +5,7 @@ import { Wallet } from '../util/types'
 import { WalletManager } from './wallet'
 import { Database } from './database'
 import { EventEmitter } from 'events'
-import { asyncCollection } from '../util/functions'
+import { toAsyncIterable } from '../util/functions'
 
 // Constants used for logging purposes
 const WALLET = 'walletmanager'
@@ -367,7 +367,7 @@ export class Handler extends EventEmitter {
         // sort highest to lowest
         .sort((a, b) => Number(b.value) - Number(a.value))
       const [tx, spentUtxos] = await WalletManager.craftSendLotusTransaction({
-        outputs: asyncCollection(outputs), // 99 outputs + 1 change output = 100 outputs max
+        outputs: toAsyncIterable(outputs), // 99 outputs + 1 change output = 100 outputs max
         totalOutputValue: outputs
           .reduce((acc, { sats }) => acc + Number(sats), 0)
           .toString(),

@@ -185,6 +185,11 @@ export class Discord extends EventEmitter implements IDiscord {
       return await channel.send(message)
     }
   }
+  /**
+   * Handles the balance command
+   * @param interaction - The interaction object
+   * @param platformId - The platform ID
+   */
   private handleBalanceCommand = async (
     interaction: ChatInputCommandInteraction | Message,
     platformId: string,
@@ -206,6 +211,11 @@ export class Discord extends EventEmitter implements IDiscord {
     }
   }
 
+  /**
+   * Handles the deposit command
+   * @param interaction - The interaction object
+   * @param platformId - The platform ID
+   */
   private handleDepositCommand = async (
     interaction: ChatInputCommandInteraction | Message,
     platformId: string,
@@ -235,6 +245,16 @@ export class Discord extends EventEmitter implements IDiscord {
     }
   }
 
+  /**
+   * Handles the give command
+   * @param interaction - The interaction object
+   * @param fromId - The ID of the user giving the Lotus
+   * @param fromUsername - The username of the user giving the Lotus
+   * @param toId - The ID of the user receiving the Lotus
+   * @param toUsername - The username of the user receiving the Lotus
+   * @param value - The amount of Lotus to give
+   * @param isBotDonation - Whether the donation is to the bot
+   */
   private handleGiveCommand = async (
     interaction: ChatInputCommandInteraction,
     fromId: string,
@@ -270,6 +290,13 @@ export class Discord extends EventEmitter implements IDiscord {
     }
   }
 
+  /**
+   * Handles the withdraw command
+   * @param interaction - The interaction object
+   * @param platformId - The platform ID
+   * @param outAmount - The amount of Lotus to withdraw
+   * @param outAddress - The address to withdraw the Lotus to
+   */
   private handleWithdrawCommand = async (
     interaction: ChatInputCommandInteraction | Message,
     platformId: string,
@@ -309,6 +336,12 @@ export class Discord extends EventEmitter implements IDiscord {
     }
   }
 
+  /**
+   * Handles the link command
+   * @param interaction - The interaction object
+   * @param platformId - The platform ID
+   * @param secret - The secret to link the account to
+   */
   private handleLinkCommand = async (
     interaction: ChatInputCommandInteraction | Message,
     platformId: string,
@@ -343,6 +376,11 @@ export class Discord extends EventEmitter implements IDiscord {
     }
   }
 
+  /**
+   * Handles the backup command
+   * @param interaction - The interaction object
+   * @param platformId - The platform ID
+   */
   private handleBackupCommand = async (
     interaction: ChatInputCommandInteraction | Message,
     platformId: string,
@@ -364,6 +402,13 @@ export class Discord extends EventEmitter implements IDiscord {
     }
   }
 
+  /**
+   * Sends a message to a Discord chat when a deposit is received
+   * @param platformId - The Discord chat ID to send the message to
+   * @param txid - The transaction ID of the deposit
+   * @param amount - The amount of the deposit
+   * @param balance - The balance of the user after the deposit
+   */
   sendDepositReceived = async (
     platformId: string,
     txid: string,
@@ -387,6 +432,10 @@ export class Discord extends EventEmitter implements IDiscord {
     }
   }
 
+  /**
+   * Registers the commands with the Discord API
+   * @param guildId - The ID of the guild to register the commands to
+   */
   private _registerCommands = async (guildId: string) => {
     try {
       await this.client.rest.put(
@@ -398,11 +447,18 @@ export class Discord extends EventEmitter implements IDiscord {
       throw new Error(`${guildId}: _registerCommands: ${e.message}`)
     }
   }
+  /**
+   * Handles the ready event
+   */
   private _handleReady = () => {
     this._setRandomActivity()
     this.activityInterval = setInterval(this._setRandomActivity, 10000)
   }
 
+  /**
+   * Handles a direct message
+   * @param message - The message object
+   */
   private _handleDirectMessage = async (message: Message) => {
     const { author, content } = message
 
@@ -466,6 +522,10 @@ export class Discord extends EventEmitter implements IDiscord {
     }
   }
 
+  /**
+   * Handles a command message
+   * @param interaction - The interaction object
+   */
   private _handleCommandMessage = async (
     interaction: ChatInputCommandInteraction,
   ) => {
@@ -567,6 +627,9 @@ export class Discord extends EventEmitter implements IDiscord {
     }
   }
 
+  /**
+   * Sets a random activity for the bot
+   */
   private _setRandomActivity = () => {
     const randomIndex = Math.floor(
       Math.random() * (this.activities.length - 1) + 1,

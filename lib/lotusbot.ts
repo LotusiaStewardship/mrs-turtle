@@ -124,7 +124,7 @@ export default class LotusBot {
        */
       await this.handler.init()
       /**
-       * Initialize Temporal worker if all required parameters are configured
+       * Initialize Temporal client/worker if all required parameters are configured
        */
       if (
         !Object.values(config.temporal.worker).some(

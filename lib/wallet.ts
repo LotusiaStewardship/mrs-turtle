@@ -20,7 +20,7 @@ import {
 import config from '../config'
 import { WALLET } from '../util/constants'
 import type { Wallet } from '../util/types'
-import { asyncCollection } from '../util/functions'
+import { toAsyncIterable } from '../util/functions'
 /** A map of `WalletKey` instances, keyed by `userId` */
 type WalletMap = Map<string, WalletKey>
 /**
@@ -169,7 +169,7 @@ class WalletKey {
     this.chronikWs = chronikWs
   }
   /** Initialize the Chronik client and WS endpoint */
-  public async init() {
+  async init() {
     const utxos = await this.fetchUtxos()
     this.utxos = utxos.map(utxo => WalletTools.toParsedUtxo(utxo))
   }
@@ -207,7 +207,7 @@ class WalletKey {
     }
     const validatedUtxos: Wallet.ParsedUtxo[] = []
     let i = 0
-    for await (const utxo of asyncCollection(utxos)) {
+    for await (const utxo of toAsyncIterable(utxos)) {
       switch (result[i].state) {
         case 'UNSPENT':
           validatedUtxos.push(utxo)
@@ -454,53 +454,6 @@ export class WalletManager {
       throw new Error(`broadcastTx: ${e.message}`)
     }
   }
-  /** Generate transaction for the provided WalletKeys */
-  private _genTx = (
-    userIds: string[],
-    outAddress: string | Address,
-    outSats: number,
-  ) => {
-    const tx = new Transaction()
-    const signingKeys: PrivateKey[] = []
-    try {
-      for (const userId of userIds) {
-        const wallet = this.wallets.get(userId)
-        signingKeys.push(wallet.signingKey)
-        for (const utxo of wallet.utxos) {
-          tx.addInput(WalletTools.toPKHInput(utxo, wallet.script))
-          if (tx.inputAmount > outSats) {
-            break
-          }
-        }
-        // May need to continue adding utxos from other keys
-        if (tx.inputAmount < outSats) {
-          continue
-        }
-        tx.feePerByte(config.wallet.tx.feeRate)
-        // Set current key's address as change address
-        tx.change(wallet.address)
-        const outScript = WalletTools.getScriptFromAddress(outAddress)
-        const txFee = tx._estimateSize() * config.wallet.tx.feeRate
-        tx.addOutput(
-          WalletTools.toOutput(
-            // subtract fee from output amount if required
-            outSats + txFee > tx.inputAmount ? outSats - txFee : outSats,
-            outScript,
-          ),
-        )
-        tx.sign(signingKeys)
-        const verified = tx.verify()
-        switch (typeof verified) {
-          case 'boolean':
-            return tx
-          case 'string':
-            throw new Error(verified)
-        }
-      }
-    } catch (e: any) {
-      throw new Error(`_genTx: ${e.message}`)
-    }
-  }
   /**
    * Ensure Chronik `AddedToMempool` doesn't corrupt the in-memory UTXO set
    */
@@ -530,12 +483,12 @@ export class WalletManager {
       }
       // process each tx output
       let i = -1
-      for await (const output of asyncCollection(tx.outputs)) {
+      for await (const output of toAsyncIterable(tx.outputs)) {
         // increment output index
         // if first output, this will value start at 0
         i++
         // find userId/key matching output scriptHex
-        for await (const userIds of asyncCollection(
+        for await (const userIds of toAsyncIterable(
           Object.values(this.accounts),
         )) {
           const userId = userIds.find(
