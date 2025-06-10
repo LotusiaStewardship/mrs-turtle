@@ -84,6 +84,10 @@ export class Discord extends EventEmitter implements IDiscord {
     //Command JSON for Discord Command Registration Type 10 is number, 3 is string?
     this.commands = [
       {
+        name: 'ca',
+        description: 'Get the Solana contract address for $WXPI',
+      },
+      {
         name: 'give',
         description: 'Give XPI to another user.',
         options: [
@@ -401,7 +405,31 @@ export class Discord extends EventEmitter implements IDiscord {
       )
     }
   }
-
+  /**
+   * Handles the contract address command
+   * @param interaction - The interaction object
+   * @param platformId - The platform ID
+   */
+  private handleContractAddressCommand = async (
+    interaction: ChatInputCommandInteraction | Message,
+    platformId: string,
+  ) => {
+    try {
+      await interaction.reply({
+        content: format(
+          BOT.MESSAGE.CA,
+          config.sol.wxpiContractAddress,
+          config.sol.dexScreenerUrl,
+        ),
+        ephemeral: false,
+      })
+    } catch (e: any) {
+      this.handler.log(
+        'discord',
+        `${platformId}: handleContractAddressCommand: ${e.message}`,
+      )
+    }
+  }
   /**
    * Sends a message to a Discord chat when a deposit is received
    * @param platformId - The Discord chat ID to send the message to
@@ -472,6 +500,9 @@ export class Discord extends EventEmitter implements IDiscord {
     const wAddress = words[2] || null
     const platformId = author.id
     switch (command) {
+      case 'ca':
+        await this.handleContractAddressCommand(message, platformId)
+        break
       case 'balance':
         await this.handleBalanceCommand(message, platformId)
         break
@@ -548,6 +579,9 @@ export class Discord extends EventEmitter implements IDiscord {
 
     try {
       switch (commandName) {
+        case 'ca':
+          await this.handleContractAddressCommand(interaction, platformId)
+          break
         case 'give':
           const to = options.getUser('to')
           const toId = to.id

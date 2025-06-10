@@ -25,6 +25,9 @@ export const BOT = {
       `%s, you have donated %s XPI %s! 🪷\r\n\r\n` +
       `The community fund grows ever larger. Your generosity is greatly appreciated!\r\n\r\n` +
       `[View tx on the Explorer](%s)`,
+    CA:
+      `The official Solana contract address for $WXPI is: \`%s\`\r\n\r\n` +
+      `[See it on DexScreener](%s)`,
     GIVE:
       `%s, you have given %s XPI to %s! 🪷\r\n\r\n` +
       `[View tx on the Explorer](%s)`,

@@ -58,6 +58,7 @@ export class Telegram extends EventEmitter implements ITelegram {
 
   setup = async (apiKey: string) => {
     this.client = new Telegraf(apiKey)
+    this.client.command('ca', this.handleGroupMessage)
     this.client.command('give', this.handleGroupMessage)
     this.client.command('balance', this.handleDirectMessage)
     this.client.command('deposit', this.handleDirectMessage)
@@ -342,6 +343,34 @@ export class Telegram extends EventEmitter implements ITelegram {
   }
 
   /**
+   * Handles the contract address command
+   * @param chatId - The Telegram chat ID to send the message to
+   * @param replyToMessageId - The message ID to reply to
+   */
+  private handleContractAddressCommand = async (
+    chatId: number,
+    replyToMessageId: number,
+  ) => {
+    try {
+      await setTimeout(this.calcReplyDelay())
+      await this.notifyUser(
+        chatId,
+        format(
+          BOT.MESSAGE.CA,
+          config.sol.wxpiContractAddress,
+          config.sol.dexScreenerUrl,
+        ),
+        replyToMessageId,
+      )
+    } catch (e: any) {
+      this.handler.log(
+        'telegram',
+        `${chatId}: handleContractAddressCommand: ${e.message}`,
+      )
+    }
+  }
+
+  /**
    * Handles a direct message
    * @param ctx - The context of the message
    */
@@ -432,6 +461,9 @@ export class Telegram extends EventEmitter implements ITelegram {
       const messageText = <string>(<any>ctx.message).text
       const command = messageText.split(' ').shift()
       switch (command) {
+        case '/ca':
+          return this.handleContractAddressCommand(chatId, replyToMessageId)
+
         case '/give':
           if (!toId || fromId == toId) {
             return await ctx.sendMessage(
