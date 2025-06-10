@@ -18,6 +18,10 @@ export type ParsedConfig = {
     }
   }
   dbUrl: string
+  sol: {
+    wxpiContractAddress: string
+    dexScreenerUrl: string
+  }
   temporal: {
     worker: {
       host: string
@@ -65,6 +69,10 @@ export class Config {
         },
       },
       dbUrl: process.env.DATABASE_URL,
+      sol: {
+        wxpiContractAddress: process.env.SOL_WXPI_CA,
+        dexScreenerUrl: process.env.SOL_WXPI_DEXSCREENER_URL,
+      },
       temporal: {
         worker: {
           host: process.env.TEMPORAL_HOST,
