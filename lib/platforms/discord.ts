@@ -1,3 +1,5 @@
+import { format } from 'node:util'
+import { EventEmitter } from 'node:events'
 import {
   REST,
   Routes,
@@ -12,12 +14,10 @@ import {
   ChannelType,
   TextChannel,
 } from 'discord.js'
-import { BOT } from '../../util/constants'
-import { format } from 'node:util'
-import { Platform } from '.'
-import config from '../../config'
-import { Handler } from '../handler'
-import { EventEmitter } from 'node:stream'
+import { BOT } from '../../util/constants.js'
+import { Platform } from './index.js'
+import config from '../../config.js'
+import { Handler } from '../handler.js'
 
 // DM Branding
 const primaryColor: ColorResolvable = 0xa02fe4
@@ -186,6 +186,9 @@ export class Discord extends EventEmitter implements IDiscord {
     const [, channelId] = guildChannel.split(':')
     const channel = this.client.channels.cache.get(channelId)
     if (channel instanceof TextChannel) {
+      console.log(
+        `DISCORD: channel ${channelId}: sending message received from Temporal workflow: "${message}"`,
+      )
       return await channel.send(message)
     }
   }

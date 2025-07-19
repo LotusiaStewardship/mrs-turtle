@@ -1,5 +1,5 @@
-import { EventEmitter } from 'node:stream'
-import { Platform } from '.'
+import { EventEmitter } from 'node:events'
+import { Platform } from './index.js'
 
 export type TwitterMessage = {}
 

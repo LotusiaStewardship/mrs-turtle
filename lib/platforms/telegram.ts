@@ -1,20 +1,15 @@
+import { EventEmitter } from 'node:events'
 import { setTimeout } from 'node:timers/promises'
 import { format } from 'node:util'
 import { Context, Telegraf } from 'telegraf'
-import { Platform } from '.'
-import { BOT } from '../../util/constants'
-import { split } from '../../util'
-import config from '../../config'
-import { Message } from 'telegraf/types'
-import { Handler } from '../handler'
-import { EventEmitter } from 'node:stream'
+import { Platform } from './index.js'
+import { BOT } from '../../util/constants.js'
+import { split } from '../../util/index.js'
+import config from '../../config.js'
+import type { Message, UserFromGetMe } from 'telegraf/types'
+import { Handler } from '../handler.js'
 
 const REPLIES_PER_SECOND = 20
-const parseGive = (text: string) => {
-  const parts = split(text)
-  const index = parts.findIndex(part => part.toLowerCase() == '/give')
-  return index >= 0 ? parts.slice(index + 1, index + 2).pop() : null
-}
 const parseWithdraw = (text: string) => {
   const parts = split(text)
   const index = parts.findIndex(part => part.toLowerCase() == '/withdraw')
@@ -50,6 +45,9 @@ export class Telegram extends EventEmitter implements ITelegram {
   private client: Telegraf
   private handler: Handler
   private lastReplyTime: number
+  private botInfo: UserFromGetMe
+  private botUsername: string
+
   constructor(handler: Handler) {
     super()
     this.handler = handler
@@ -72,13 +70,14 @@ export class Telegram extends EventEmitter implements ITelegram {
     this.client.launch()
     // once this promise resolves, bot is active
     // https://github.com/telegraf/telegraf/issues/1749
-    await this.client.telegram.getMe()
+    this.botInfo = await this.client.telegram.getMe()
+    this.botUsername = this.botInfo.username.toLowerCase()
   }
   stop = async () => {
     this.client?.stop()
   }
   getBotId = () => this.client.botInfo?.id?.toString()
-  notifyUser = async (
+  private notifyUser = async (
     platformOrChatId: string | number,
     msg: string,
     replyToMessageId?: number,
@@ -459,12 +458,13 @@ export class Telegram extends EventEmitter implements ITelegram {
       const toUsername =
         repliedMessage?.from?.username || repliedMessage?.from?.first_name
       const messageText = <string>(<any>ctx.message).text
-      const command = messageText.split(' ').shift()
+      const command = messageText.split(' ').shift().toLowerCase()
       switch (command) {
         case '/ca':
           return this.handleContractAddressCommand(chatId, replyToMessageId)
 
         case '/give':
+        case `/give@${this.botUsername}`: {
           if (!toId || fromId == toId) {
             return await ctx.sendMessage(
               BOT.MESSAGE.ERR_GIVE_MUST_REPLY_TO_USER,
@@ -491,7 +491,7 @@ export class Telegram extends EventEmitter implements ITelegram {
             */
           }
           const messageText = <string>(<any>ctx.message).text
-          const amount = parseGive(messageText)
+          const amount = this.parseGive(messageText)
           const amountInt = Number(amount)
           if (isNaN(amountInt) || amountInt <= 0) {
             return await ctx.sendMessage(BOT.MESSAGE.ERR_AMOUNT_INVALID, {
@@ -510,6 +510,7 @@ export class Telegram extends EventEmitter implements ITelegram {
             amount,
             isBotDonation,
           )
+        }
       }
     } catch (e: any) {
       throw new Error(`_handleGroupMessage: ${e.message}`)
@@ -521,6 +522,7 @@ export class Telegram extends EventEmitter implements ITelegram {
    * @param ctx - The context of the message
    */
   private handleTemporalCommand = async (ctx: Context) => {
+    //console.log(ctx)
     // ignore command if not sent in DM
     if (ctx.message.chat.type !== 'private') {
       return
@@ -554,5 +556,20 @@ export class Telegram extends EventEmitter implements ITelegram {
       1000 / REPLIES_PER_SECOND - (now - this.lastReplyTime),
     )
     return delay < 0 ? 0 : delay
+  }
+
+  /**
+   * Parses the give command
+   * @param text - The text of the message
+   * @returns The amount of Lotus to give
+   */
+  private parseGive = (text: string) => {
+    const parts = split(text)
+    const index = parts.findIndex(
+      part =>
+        part.toLowerCase() == '/give' ||
+        part.toLowerCase() == `/give@${this.botUsername}`,
+    )
+    return index >= 0 ? parts.slice(index + 1, index + 2).pop() : null
   }
 }

@@ -1,12 +1,12 @@
 import {
   Address,
   HDPrivateKey,
+  Mnemonic,
   Networks,
   PrivateKey,
   Script,
   Transaction,
-} from '@abcpros/bitcore-lib-xpi'
-import Mnemonic from '@abcpros/bitcore-mnemonic'
+} from 'lotus-lib/lib/bitcore/index.js'
 import {
   ChronikClient,
   OutPoint,
@@ -17,10 +17,14 @@ import {
   UtxoState,
   WsEndpoint,
 } from 'chronik-client'
-import config from '../config'
-import { WALLET } from '../util/constants'
-import type { Wallet } from '../util/types'
-import { toAsyncIterable } from '../util/functions'
+import config from '../config.js'
+import { WALLET } from '../util/constants.js'
+import type { Wallet } from '../util/types.js'
+import { toAsyncIterable } from '../util/functions.js'
+import {
+  PublicKeyHashInput,
+  Output,
+} from 'lotus-lib/lib/bitcore/transaction/index.js'
 /** A map of `WalletKey` instances, keyed by `userId` */
 type WalletMap = Map<string, WalletKey>
 /**
@@ -34,7 +38,9 @@ export class WalletTools {
    */
   static getScriptFromAddress = (address: string | Address): Script => {
     try {
-      return Script.fromAddress(address)
+      return Script.fromAddress(
+        typeof address === 'string' ? Address.fromString(address) : address,
+      )
     } catch (e: any) {
       throw new Error(`getScriptFromAddress: ${e.message}`)
     }
@@ -99,7 +105,7 @@ export class WalletTools {
   /** Create Bitcore-compatible P2PKH `Transaction.Input` */
   static toPKHInput = (utxo: Wallet.ParsedUtxo, script: Script) => {
     try {
-      return new Transaction.Input.PublicKeyHash({
+      return new PublicKeyHashInput({
         prevTxId: utxo.txid,
         outputIndex: utxo.outIdx,
         output: this.toOutput(Number(utxo.value), script),
@@ -112,7 +118,7 @@ export class WalletTools {
   /** Create a Bitcore-compatible `Transaction.Output` */
   static toOutput = (satoshis: number, script: Script) => {
     try {
-      return new Transaction.Output({ satoshis, script })
+      return new Output({ satoshis, script })
     } catch (e: any) {
       throw new Error(`_toOutput: ${e.message}`)
     }
@@ -394,9 +400,9 @@ export class WalletManager {
         if (tx.inputAmount < outSats) {
           continue
         }
-        tx.feePerByte(config.wallet.tx.feeRate)
+        tx.feePerByte = config.wallet.tx.feeRate
         // Set current key's address as change address
-        tx.change(wallet.address)
+        tx.change = wallet.address
         // Set up output script
         let outScript: Script
         switch (type) {
@@ -408,7 +414,7 @@ export class WalletManager {
             break
         }
         // add appropriate output with tx fee subtracted if required
-        const txFee = tx._estimateSize() * config.wallet.tx.feeRate
+        const txFee = tx.getFee()
         tx.addOutput(
           WalletTools.toOutput(
             // subtract fee from output amount if required
@@ -534,13 +540,15 @@ export class WalletManager {
     }
   }
   /** Generates a new 12-word mnemonic phrase */
-  static newMnemonic = () => new Mnemonic() as typeof Mnemonic
+  static newMnemonic = () => new Mnemonic()
   /** Gets `HDPrivateKey` from mnemonic seed buffer */
-  static newHDPrivateKey = (mnemonic: typeof Mnemonic) =>
+  static newHDPrivateKey = (mnemonic: Mnemonic) =>
     HDPrivateKey.fromSeed(mnemonic.toSeed())
   /** Instantiate Prisma HDPrivateKey buffer as `HDPrivateKey` */
   static hdPrivKeyFromBuffer = (hdPrivKeyBuf: Buffer) =>
     new HDPrivateKey(hdPrivKeyBuf)
+  static hdPrivKeyFromString = (hdPrivKeyStr: string) =>
+    HDPrivateKey.fromSeed(hdPrivKeyStr, Networks.mainnet)
   static toOutpoint = (utxo: Wallet.ParsedUtxo): OutPoint => {
     return {
       txid: utxo.txid,
@@ -583,18 +591,20 @@ export class WalletManager {
   }): Promise<[Transaction, Wallet.ParsedUtxo[]]> => {
     // set up transaction with base parameters
     const tx = new Transaction()
-    tx.feePerByte(config.wallet.tx.feeRate)
-    tx.change(changeAddress)
+    tx.feePerByte = config.wallet.tx.feeRate
+    tx.change = changeAddress
     // input address to script
-    const inScript = Script.fromAddress(inAddress)
+    const inScript = Script.fromAddress(
+      typeof inAddress === 'string' ? Address.fromString(inAddress) : inAddress,
+    )
     const spentUtxos: Wallet.ParsedUtxo[] = []
     // add utxos to inputs until sufficient input amount gathered
     for (const utxo of utxos) {
       tx.addInput(
-        new Transaction.Input.PublicKeyHash({
+        new PublicKeyHashInput({
           prevTxId: utxo.txid,
           outputIndex: utxo.outIdx,
-          output: new Transaction.Output({
+          output: new Output({
             satoshis: Number(utxo.value),
             script: inScript,
           }),
@@ -610,7 +620,7 @@ export class WalletManager {
     // add tx outputs
     for await (const output of outputs) {
       tx.addOutput(
-        new Transaction.Output({
+        new Output({
           satoshis: Number(output.sats),
           script: Script.fromAddress(
             Address.fromPublicKeyHash(

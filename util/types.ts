@@ -1,6 +1,10 @@
-import type { Address, PrivateKey, Script } from '@abcpros/bitcore-lib-xpi'
+import type {
+  Address,
+  PrivateKey,
+  Script,
+} from 'lotus-lib/lib/bitcore/index.js'
 import type { ScriptType } from 'chronik-client'
-import type { PlatformName } from '../lib/platforms'
+import type { PlatformName } from '../lib/platforms/index.js'
 
 export namespace Temporal {
   export type Command = {
