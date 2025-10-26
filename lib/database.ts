@@ -1,6 +1,6 @@
-import { PrismaClient } from '../prisma/prisma-client-js'
-import type { PlatformName } from './platforms'
-import type { Wallet } from '../util/types'
+import { PrismaClient } from '../prisma/prisma-client-js/client.js'
+import type { PlatformName } from './platforms/index.js'
+import type { Wallet } from '../util/types.js'
 
 enum PlatformUserTable {
   telegram = 'userTelegram',
@@ -81,7 +81,7 @@ export class Database {
       throw new Error(`getUserWalletKeys: ${e.message}`)
     }
   }
-  updateUserWalletKey = async (
+  /* updateUserWalletKey = async (
     userId: string,
     data: {
       mnemonic: string
@@ -97,7 +97,7 @@ export class Database {
     } catch (e: any) {
       throw new Error(`updateUserWAlletKey: ${e.message}`)
     }
-  }
+  } */
   /**
    * Validates that the provided `AccountUtxo`s are in the database
    * @param utxos - The `AccountUtxo`s to validate

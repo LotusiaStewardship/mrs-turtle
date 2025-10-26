@@ -1,8 +1,8 @@
-import { Platforms, PlatformName, Platform } from './platforms'
-import config from '../config'
-import { WalletManager } from './wallet'
-import { Database } from './database'
-import { Handler } from './handler'
+import { Platforms, PlatformName, Platform } from './platforms/index.js'
+import config from '../config.js'
+import { WalletManager } from './wallet.js'
+import { Database } from './database.js'
+import { Handler } from './handler.js'
 import {
   Client,
   Connection,
@@ -10,8 +10,8 @@ import {
   type SearchAttributes,
 } from '@temporalio/client'
 import { NativeConnection, Worker } from '@temporalio/worker'
-import { Activities, LocalActivities } from './temporal'
-import type { Temporal } from '../util/types'
+import { Activities, LocalActivities } from './temporal/index.js'
+import type { Temporal } from '../util/types.js'
 
 // Constants used for logging purposes
 const WALLET = 'walletmanager'
@@ -94,11 +94,12 @@ export default class LotusBot {
         await this.wallet.init(
           keys.map(key => {
             const { accountId, userId, hdPrivKey } = key
-            const hdPrivKeyBuf = Buffer.from(hdPrivKey)
             return {
               accountId,
               userId,
-              hdPrivKey: WalletManager.hdPrivKeyFromBuffer(hdPrivKeyBuf),
+              hdPrivKey: WalletManager.hdPrivKeyFromBuffer(
+                Buffer.from(hdPrivKey),
+              ),
             }
           }),
         )

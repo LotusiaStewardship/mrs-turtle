@@ -2,7 +2,7 @@
 // learn more about it in the docs: https://pris.ly/d/prisma-schema
 
 generator client {
-  provider = "prisma-client-js"
+  provider = "prisma-client"
   output   = "./prisma/prisma-client-js"
 }
 
@@ -12,85 +12,90 @@ datasource db {
 }
 
 model Deposit {
-  txid String
-  outIdx Int
+  txid        String
+  outIdx      Int
   // Deposit amount, in satoshis
-  value String
-  userId String
-  timestamp DateTime
+  value       String
+  userId      String
+  timestamp   DateTime
   blockHeight Int?
-  isCoinbase Boolean @default(false)
-  user User @relation(fields: [userId], references: [id])
+  isCoinbase  Boolean  @default(false)
+  user        User     @relation(fields: [userId], references: [id])
+
   @@unique([txid, outIdx])
   @@index([txid, userId])
 }
 
 model Withdrawal {
-  txid String @unique
-  value String
+  txid      String   @unique
+  value     String
   timestamp DateTime
-  userId String
-  user User @relation(fields: [userId], references: [id])
+  userId    String
+  user      User     @relation(fields: [userId], references: [id])
+
   @@index([txid, userId])
 }
 
 model Give {
-  txid String @unique
-  platform String
+  txid      String   @unique
+  platform  String
   timestamp DateTime
-  fromId String
-  toId String
-  from User @relation("from", fields: [fromId], references: [id])
-  to User @relation("to", fields: [toId], references: [id])
+  fromId    String
+  toId      String
+  from      User     @relation("from", fields: [fromId], references: [id])
+  to        User     @relation("to", fields: [toId], references: [id])
   // Amount given, in satoshis
-  value String
+  value     String
+
   @@index([txid, platform, fromId, toId])
 }
 
 model Account {
-  id String @id
+  id    String @id
   users User[]
 }
 
 model User {
-  id String @id
-  secret String @unique
-  accountId String
-  telegram UserTelegram?
-  twitter UserTwitter?
-  discord UserDiscord?
-  account Account @relation(fields: [accountId], references: [id])
-  key WalletKey?
-  deposits Deposit[]
+  id          String        @id
+  secret      String        @unique
+  accountId   String
+  telegram    UserTelegram?
+  twitter     UserTwitter?
+  discord     UserDiscord?
+  account     Account       @relation(fields: [accountId], references: [id])
+  key         WalletKey?
+  deposits    Deposit[]
   withdrawals Withdrawal[]
-  gives Give[] @relation("from")
-  receives Give[] @relation("to")
+  gives       Give[]        @relation("from")
+  receives    Give[]        @relation("to")
+
   @@index([id, secret, accountId])
 }
 
 model UserTelegram {
-  id String @id
+  id     String @id
   userId String @unique
-  user User @relation(fields: [userId], references: [id])
+  user   User   @relation(fields: [userId], references: [id])
 }
 
 model UserTwitter {
-  id String @id
+  id     String @id
   userId String @unique
-  user User @relation(fields: [userId], references: [id])
+  user   User   @relation(fields: [userId], references: [id])
 }
 
 model UserDiscord {
-  id String @id
+  id     String @id
   userId String @unique
-  user User @relation(fields: [userId], references: [id])
+  user   User   @relation(fields: [userId], references: [id])
 }
 
 model WalletKey {
-  mnemonic String @unique
-  hdPrivKey Bytes @unique
-  hdPubKey Bytes @unique
-  userId String @unique
-  user User @relation(fields: [userId], references: [id])
+  mnemonic  String @unique
+  hdPrivKey Bytes  @unique
+  hdPubKey  Bytes  @unique
+  userId    String @unique
+  user      User   @relation(fields: [userId], references: [id])
+
   @@index([userId])
 }

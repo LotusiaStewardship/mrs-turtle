@@ -1,7 +1,7 @@
-import { Telegram } from './telegram'
-import { Twitter } from './twitter'
-import { Discord } from './discord'
-import { EventEmitter } from 'node:stream'
+import { EventEmitter } from 'node:events'
+import { Telegram } from './telegram.js'
+import { Twitter } from './twitter.js'
+import { Discord } from './discord.js'
 
 export const Platforms = {
   telegram: Telegram,
