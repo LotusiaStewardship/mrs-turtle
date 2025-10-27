@@ -4,7 +4,7 @@ import * as Util from '../util/index.js'
 import { BOT, TRANSACTION } from '../util/constants.js'
 import { Wallet } from '../util/types.js'
 import { WalletManager } from './wallet.js'
-import { Database } from './database.js'
+import * as db from './database.js'
 import { toAsyncIterable } from '../util/functions.js'
 
 // Constants used for logging purposes
@@ -19,12 +19,10 @@ const { MIN_OUTPUT_AMOUNT } = TRANSACTION
  * Handles communication between submodules
  */
 export class Handler extends EventEmitter {
-  private prisma: Database
   private wallet: WalletManager
 
-  constructor(prisma: Database, wallet: WalletManager) {
+  constructor(wallet: WalletManager) {
     super()
-    this.prisma = prisma
     this.wallet = wallet
     // Add the walletDepositReceived Chronik event callback to the WalletManager
     // This is set as the callback for the 'AddedToMempool' and 'BlockConnected' events
@@ -46,7 +44,7 @@ export class Handler extends EventEmitter {
         const mnemonic = WalletManager.newMnemonic()
         const hdPrivKey = WalletManager.newHDPrivateKey(mnemonic)
         const hdPubKey = hdPrivKey.hdPublicKey
-        await this.prisma.saveAccount({
+        await db.write.saveAccount({
           accountId,
           userId,
           secret,
@@ -64,10 +62,11 @@ export class Handler extends EventEmitter {
     this.log(MAIN, `reconciling deposits with UTXO set`)
     try {
       const utxos = this.wallet.getUtxos()
-      const newDeposits = await this.prisma.reconcileDeposits(utxos)
-      for (const deposit of newDeposits) {
+      const deposits = await db.write.reconcileDeposits(utxos)
+      for (const deposit of deposits) {
         await this.saveDeposit(deposit)
       }
+      this.log(MAIN, `reconciled ${deposits.length} deposits`)
     } catch (e: any) {
       throw new Error(`init: ${e.message}`)
     }
@@ -170,7 +169,7 @@ export class Handler extends EventEmitter {
     })
     // save give to database before broadcasting
     try {
-      await this.prisma.saveGive({
+      await db.write.saveGive({
         txid: tx.txid,
         platform: platform.toLowerCase(),
         timestamp: new Date(),
@@ -187,7 +186,7 @@ export class Handler extends EventEmitter {
       const txid = await this.wallet.broadcastTx(tx)
       this.log(WALLET, `${msg}: accepted by network: ${txid}`)
     } catch (e: any) {
-      await this.prisma.deleteGive(tx.txid)
+      await db.write.deleteGive(tx.txid)
       throw new Error(`${msg}: ERROR: broadcast failed: ${e.message}`)
     }
     // Reconcile UTXO set for WalletKey
@@ -248,7 +247,7 @@ export class Handler extends EventEmitter {
     })
     // Save the withdrawal to the database before broadcasting
     try {
-      await this.prisma.saveWithdrawal({
+      await db.write.saveWithdrawal({
         txid: tx.txid,
         value: outSats.toString(),
         timestamp: new Date(),
@@ -265,7 +264,7 @@ export class Handler extends EventEmitter {
       this.log(WALLET, `${msg}: accepted by network: ${txid}`)
     } catch (e: any) {
       // If tx broadcast fails, delete the withdrawal database entry
-      await this.prisma.deleteWithdrawal(tx.txid)
+      await db.write.deleteWithdrawal(tx.txid)
       throw new Error(`withdrawal broadcast failed: ${e.message}`)
     }
     // Reconcile UTXO set for WalletKey
@@ -304,7 +303,7 @@ export class Handler extends EventEmitter {
       /** User provided secret to link account */
       case 'string':
         // Get the accountId associated with the user with the secret
-        const linkAccountId = await this.prisma.getAccountIdFromSecret(secret)
+        const linkAccountId = await db.read.getAccountIdFromSecret(secret)
         // sanity checks
         if (!linkAccountId) {
           return 'invalid secret provided'
@@ -312,7 +311,7 @@ export class Handler extends EventEmitter {
           return 'own secret provided or already linked'
         }
         // try to update the user's accountId
-        await this.prisma.updateUserAccountId(userId, linkAccountId)
+        await db.write.updateUserAccountId(userId, linkAccountId)
         this.log(
           platform,
           `${msg}: successfully linked to ${linkAccountId} accountId`,
@@ -322,7 +321,7 @@ export class Handler extends EventEmitter {
         return { secret: undefined }
       /** User wants secret to link account */
       case 'undefined':
-        const userSecret = await this.prisma.getUserSecret(platform, platformId)
+        const userSecret = await db.read.getUserSecret(platform, platformId)
         // try to send secret to the platform user
         return { secret: userSecret }
     }
@@ -337,7 +336,7 @@ export class Handler extends EventEmitter {
     const msg = `${platformId}: backup`
     this.log(platform, `${msg}: command received`)
     const { userId } = await this.validateAndGetIds(platform, platformId)
-    const mnemonic = await this.prisma.getUserMnemonic(userId)
+    const mnemonic = await db.read.getUserMnemonic(userId)
     return mnemonic
   }
   /**
@@ -391,10 +390,10 @@ export class Handler extends EventEmitter {
     platformId: string,
   ) => {
     try {
-      const isValidUser = await this.prisma.isValidUser(platform, platformId)
+      const isValidUser = await db.check.isValidUser(platform, platformId)
       return !isValidUser
         ? await this.saveAccount(platform, platformId)
-        : await this.prisma.getIds(platform, platformId)
+        : await db.read.getIds(platform, platformId)
     } catch (e: any) {
       throw new Error(`handler.validateAndGetIds: ${e.message}`)
     }
@@ -412,7 +411,7 @@ export class Handler extends EventEmitter {
       const mnemonic = WalletManager.newMnemonic()
       const hdPrivKey = WalletManager.newHDPrivateKey(mnemonic)
       const hdPubKey = hdPrivKey.hdPublicKey
-      await this.prisma.saveAccount({
+      await db.write.saveAccount({
         accountId,
         userId,
         secret,
@@ -438,10 +437,10 @@ export class Handler extends EventEmitter {
     try {
       if (
         // don't notify deposit on give txs
-        (await this.prisma.isGiveTx(utxo.txid)) ||
+        (await db.check.isGiveTx(utxo.txid)) ||
         // Accept a withdrawl as a deposit if the outIdx is not the change Idx
         // Fixes https://github.com/givelotus/lotus-bot/issues/48
-        ((await this.prisma.isWithdrawTx(utxo.txid)) &&
+        ((await db.check.isWithdrawTx(utxo.txid)) &&
           utxo.outIdx == WalletManager.WITHDRAW_CHANGE_OUTIDX) ||
         // ignore bot deposits
         // this does not affect notifications when giving to the bot
@@ -449,13 +448,13 @@ export class Handler extends EventEmitter {
       ) {
         return
       }
-      const deposit = await this.prisma.saveDeposit({
+      const deposit = await db.write.saveDeposit({
         ...utxo,
         timestamp: new Date(),
       })
       this.log(DB, `deposit saved: ${JSON.stringify(utxo)}`)
       for (const [platformName, user] of Object.entries(deposit.user)) {
-        if (typeof user == 'string' || !user) {
+        if (typeof user === 'string' || !user) {
           continue
         }
         const { accountId } = deposit.user
