@@ -1,7 +1,7 @@
 import { Platforms, PlatformName, Platform } from './platforms/index.js'
 import config from '../config.js'
 import { WalletManager } from './wallet.js'
-import { Database } from './database.js'
+import * as db from './database.js'
 import { Handler } from './handler.js'
 import {
   Client,
@@ -25,7 +25,6 @@ export type PlatformInstances = { [platform in PlatformName]?: Platform }
  * Handles communication between submodules
  */
 export default class LotusBot {
-  private prisma: Database
   private wallet: WalletManager
   private handler: Handler
   private bots: PlatformInstances = {}
@@ -38,9 +37,8 @@ export default class LotusBot {
    * Set up required event handlers and gather enabled platforms
    */
   constructor() {
-    this.prisma = new Database()
     this.wallet = new WalletManager()
-    this.handler = new Handler(this.prisma, this.wallet)
+    this.handler = new Handler(this.wallet)
     // @ts-ignore
     this.handler.on('Shutdown', this._shutdown)
     // @ts-ignore
@@ -79,7 +77,7 @@ export default class LotusBot {
        * - Connect to the database
        */
       try {
-        await this.prisma.connect()
+        await db.connect()
         this._log(DB, 'initialized')
       } catch (e: any) {
         throw new Error(`initPrisma: ${e.message}`)
@@ -90,7 +88,7 @@ export default class LotusBot {
        * - Load all WalletKeys into WalletManager
        */
       try {
-        const keys = await this.prisma.getUserWalletKeys()
+        const keys = await db.read.getUserWalletKeys()
         await this.wallet.init(
           keys.map(key => {
             const { accountId, userId, hdPrivKey } = key
@@ -178,7 +176,7 @@ export default class LotusBot {
       this.bots[name]?.removeAllListeners()
     }
     this.wallet?.closeWsEndpoint()
-    await this.prisma?.disconnect()
+    await db.disconnect()
     try {
       this.worker?.shutdown()
     } catch (e) {
