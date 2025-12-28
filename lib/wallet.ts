@@ -8,7 +8,7 @@ import {
   Transaction,
   Output,
   Input,
-} from 'lotus-lib/lib/bitcore/index.js'
+} from 'xpi-ts/lib/bitcore'
 import {
   ChronikClient,
   OutPoint,
@@ -21,8 +21,8 @@ import {
 } from 'chronik-client'
 import config from '../config.js'
 import { WALLET } from '../util/constants.js'
-import type { Wallet } from '../util/types.js'
 import { toAsyncIterable } from '../util/functions.js'
+import type { WalletAccountUtxo, WalletParsedUtxo } from '../util/types.js'
 /** A map of `WalletKey` instances, keyed by `userId` */
 type WalletMap = Map<string, WalletKey>
 type AccountMap = Map<string, Set<string>>
@@ -87,6 +87,8 @@ export class WalletTools {
         return 'p2pkh'
       case address.isPayToScriptHash():
         return 'p2sh'
+      case address.isPayToTaproot():
+        return 'p2tr-commitment'
       default:
         return 'other'
     }
@@ -102,7 +104,7 @@ export class WalletTools {
     return { txid, outIdx, value }
   }
   /** Create Bitcore-compatible P2PKH `Transaction.Input` */
-  static toPKHInput = (utxo: Wallet.ParsedUtxo, script: Script) => {
+  static toP2PKHInput = (utxo: WalletParsedUtxo, script: Script) => {
     try {
       return new Input.PublicKeyHash({
         prevTxId: utxo.txid,
@@ -122,6 +124,12 @@ export class WalletTools {
       throw new Error(`_toOutput: ${e.message}`)
     }
   }
+  /**
+   * Validate that an address is valid using the Bitcore `Address` module
+   * @param address - The address string to validate
+   * @returns True if the address is valid, false otherwise
+   */
+  static isValidAddress = (address: string) => Address.isValid(address)
 }
 /**
  * A `WalletKey` is a single Bitcore `PrivateKey` with associated `Address`,
@@ -149,7 +157,7 @@ class WalletKey {
   /** The hex-encoded public key hash used in the script */
   public scriptPayload: string
   /** The UTXO cache for this `WalletKey` */
-  public utxos: Wallet.ParsedUtxo[] = []
+  public utxos: WalletParsedUtxo[] = []
   /**
    * Creates a new `WalletKey` instance
    * @param accountId - The unique identifier for this wallet account
@@ -203,14 +211,14 @@ class WalletKey {
    * @param utxos - The UTXOs to validate
    * @returns The validated UTXOs
    */
-  async validateUtxos(utxos: Wallet.ParsedUtxo[]) {
+  async validateUtxos(utxos: WalletParsedUtxo[]) {
     let result: UtxoState[]
     try {
       result = await this.chronik.validateUtxos(utxos)
     } catch (e: any) {
       throw new Error(`reconcileUtxos: ${e.message}`)
     }
-    const validatedUtxos: Wallet.ParsedUtxo[] = []
+    const validatedUtxos: WalletParsedUtxo[] = []
     let i = 0
     for await (const utxo of toAsyncIterable(utxos)) {
       switch (result[i].state) {
@@ -241,7 +249,7 @@ export class WalletManager {
   /** A map of `accountId`s to `userId`s */
   private accounts: AccountMap = new Map()
   /** The callback to execute when a deposit is received */
-  public walletDepositReceived: (utxo: Wallet.AccountUtxo) => Promise<void>
+  public walletDepositReceived: (utxo: WalletAccountUtxo) => Promise<void>
   /**
    * @property chronik - The Chronik client instance
    * @property chronikWs - The Chronik WS endpoint, hooked to the `chronikHandleWsMessage` method that is used by all `WalletKey` instances
@@ -282,8 +290,8 @@ export class WalletManager {
     this.chronikWs.close()
   }
   /** Get the UTXOs for every `WalletKey` */
-  getUtxos = (): Wallet.AccountUtxo[] => {
-    const utxos: Wallet.AccountUtxo[] = []
+  getUtxos = (): WalletAccountUtxo[] => {
+    const utxos: WalletAccountUtxo[] = []
     for (const [userId, walletKey] of this.wallets) {
       utxos.push(
         ...walletKey.utxos.map(utxo => {
@@ -387,10 +395,10 @@ export class WalletManager {
       outAddress?: string
       outSats: number
     },
-  ): Promise<[Transaction, Wallet.ParsedUtxo[]]> => {
+  ): Promise<[Transaction, WalletParsedUtxo[]]> => {
     const tx = new Transaction()
     const signingKeys: PrivateKey[] = []
-    const spentUtxos: Wallet.ParsedUtxo[] = []
+    const spentUtxos: WalletParsedUtxo[] = []
     // wallets used to fund the transaction
     const userIds = this.accounts.get(fromAccountId)!
     try {
@@ -398,7 +406,7 @@ export class WalletManager {
         const wallet = this.wallets.get(userId)
         signingKeys.push(wallet.signingKey)
         for (const utxo of wallet.utxos) {
-          tx.addInput(WalletTools.toPKHInput(utxo, wallet.script))
+          tx.addInput(WalletTools.toP2PKHInput(utxo, wallet.script))
           spentUtxos.push(utxo)
           if (tx.inputAmount > outSats) {
             break
@@ -408,9 +416,9 @@ export class WalletManager {
         if (tx.inputAmount < outSats) {
           continue
         }
-        tx.feePerByte = config.wallet.tx.feeRate
+        tx.feePerByte(config.wallet.tx.feeRate)
         // Set current key's address as change address
-        tx.change = wallet.address
+        tx.change(wallet.address)
         // Set up output script
         let outScript: Script
         switch (type) {
@@ -445,7 +453,7 @@ export class WalletManager {
     }
   }
   /** Remove the provided UTXOs from the `WalletKey` of `userId` */
-  removeUtxos = async (accountId: string, spentUtxos: Wallet.ParsedUtxo[]) => {
+  removeUtxos = async (accountId: string, spentUtxos: WalletParsedUtxo[]) => {
     const userIds = this.accounts.get(accountId)!
     for (const userId of userIds) {
       const walletKey = this.wallets.get(userId)
@@ -471,7 +479,7 @@ export class WalletManager {
   /**
    * Ensure Chronik `AddedToMempool` doesn't corrupt the in-memory UTXO set
    */
-  private isExistingUtxo = (userId: string, utxo: Wallet.ParsedUtxo) => {
+  private isExistingUtxo = (userId: string, utxo: WalletParsedUtxo) => {
     const utxos = this.wallets.get(userId)?.utxos
     return utxos.length > 0
       ? utxos.some(
@@ -519,7 +527,7 @@ export class WalletManager {
             txid: tx.txid,
             outIdx: i,
             value: output.value,
-          } as Wallet.ParsedUtxo
+          } as WalletParsedUtxo
           // add metadata for coinbase tx if needed
           if (tx.isCoinbase) {
             parsedUtxo.isCoinbase = true
@@ -543,7 +551,7 @@ export class WalletManager {
             await this.walletDepositReceived({
               ...parsedUtxo,
               userId,
-            } as Wallet.AccountUtxo)
+            } as WalletAccountUtxo)
           } catch (e: any) {
             throw new Error(`_chronikHandleWsMessage: ${e.message}`)
           }
@@ -564,7 +572,7 @@ export class WalletManager {
     new HDPrivateKey(hdPrivKeyBuf)
   static hdPrivKeyFromString = (hdPrivKeyStr: string) =>
     HDPrivateKey.fromSeed(hdPrivKeyStr, Networks.mainnet)
-  static toOutpoint = (utxo: Wallet.ParsedUtxo): OutPoint => {
+  static toOutpoint = (utxo: WalletParsedUtxo): OutPoint => {
     return {
       txid: utxo.txid,
       outIdx: utxo.outIdx,
@@ -600,17 +608,17 @@ export class WalletManager {
     }>
     totalOutputValue: string
     changeAddress: string
-    utxos: Wallet.ParsedUtxo[]
+    utxos: WalletParsedUtxo[]
     inAddress: string
     signingKey: PrivateKey
-  }): Promise<[Transaction, Wallet.ParsedUtxo[]]> => {
+  }): Promise<[Transaction, WalletParsedUtxo[]]> => {
     // set up transaction with base parameters
     const tx = new Transaction()
-    tx.feePerByte = config.wallet.tx.feeRate
-    tx.change = changeAddress
+    tx.feePerByte(config.wallet.tx.feeRate)
+    tx.change(changeAddress)
     // input address to script
     const inScript = Script.fromAddress(inAddress)
-    const spentUtxos: Wallet.ParsedUtxo[] = []
+    const spentUtxos: WalletParsedUtxo[] = []
     // add utxos to inputs until sufficient input amount gathered
     for (const utxo of utxos) {
       tx.addInput(
@@ -649,7 +657,6 @@ export class WalletManager {
     tx.sign(signingKey)
     return [tx, spentUtxos]
   }
-  static isValidAddress = (address: string) => Address.isValid(address)
   /**
    * Assumes that the last output is the change output. Used in Chronik WS message handling.
    * @param outIdx - the index of the output to check
