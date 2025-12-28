@@ -12,7 +12,7 @@ const WALLET = 'walletmanager'
 const DB = 'prisma'
 const MAIN = 'handler'
 
-const { MIN_OUTPUT_AMOUNT } = TRANSACTION
+const { MIN_OUTPUT_SATS } = TRANSACTION
 /**
  * Master class
  * Processes all platform commands
@@ -147,8 +147,8 @@ export class Handler extends EventEmitter {
     const outSats = Util.toSats(value)
     const msg = `chatId ${chatId}: fromId ${fromId}: give: ${fromUsername} -> ${toId} (${toUsername}): ${outSats} sats`
     this.log(platform, `${msg}: command received`)
-    if (outSats < MIN_OUTPUT_AMOUNT) {
-      throw new Error(`${msg}: ERROR: minimum required: ${MIN_OUTPUT_AMOUNT}`)
+    if (outSats < MIN_OUTPUT_SATS) {
+      throw new Error(`${msg}: ERROR: minimum required: ${MIN_OUTPUT_SATS}`)
     }
     // Create account for fromId if not exist
     const { accountId: fromAccountId, userId: fromUserId } =
@@ -222,8 +222,8 @@ export class Handler extends EventEmitter {
     const outSats = Util.toSats(outAmount)
     if (!WalletManager.isValidAddress(outAddress)) {
       return `invalid address: \`${outAddress}\``
-    } else if (outSats < MIN_OUTPUT_AMOUNT) {
-      return `withdraw minimum is ${Util.toXPI(MIN_OUTPUT_AMOUNT)} XPI`
+    } else if (outSats < MIN_OUTPUT_SATS) {
+      return `withdraw minimum is ${Util.toXPI(MIN_OUTPUT_SATS)} XPI`
     }
     const { accountId, userId } = await this.validateAndGetIds(
       platform,

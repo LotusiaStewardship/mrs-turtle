@@ -79,5 +79,5 @@ export const TRANSACTION = {
   /** Default output dust limit */
   DUST_LIMIT: 546,
   /** Minimum output amount for any Give/Withdraw */
-  MIN_OUTPUT_AMOUNT: 1000,
+  MIN_OUTPUT_SATS: 1_000_000,
 }
