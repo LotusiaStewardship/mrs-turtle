@@ -1,8 +1,4 @@
-import type {
-  Address,
-  PrivateKey,
-  Script,
-} from 'lotus-lib/lib/bitcore/index.js'
+import type { Address, PrivateKey, Script } from 'xpi-ts/lib/bitcore'
 import type { ScriptType } from 'chronik-client'
 import type { PlatformName } from '../lib/platforms/index.js'
 
@@ -24,51 +20,49 @@ export namespace Temporal {
   }
 }
 
-export namespace Wallet {
-  export type Deposit = AccountUtxo & {
-    timestamp: Date
-    confirmed?: boolean
-  }
+export interface WalletParsedUtxo {
+  txid: string
+  outIdx: number
+  value: string
+  isCoinbase?: boolean
+  blockHeight?: number
+}
 
-  export type Give = {
-    txid: string
-    platform: string
-    timestamp: Date
-    fromId: string
-    toId: string
-    value: string
-  }
+export interface WalletAccountUtxo extends WalletParsedUtxo {
+  userId: string
+}
 
-  export type Withdrawal = {
-    txid: string
-    value: string
-    timestamp: Date
-    userId: string
-  }
+export interface WalletDeposit extends WalletAccountUtxo {
+  timestamp: Date
+  confirmed?: boolean
+}
 
-  export type Key = {
-    signingKey: PrivateKey
-    address: Address
-    script: Script
-    scriptHex: string
-    scriptType: ScriptType
-    utxos: ParsedUtxo[]
-  }
+export interface WalletWithdrawal {
+  txid: string
+  value: string
+  timestamp: Date
+  userId: string
+}
 
-  export type ParsedUtxo = {
-    txid: string
-    outIdx: number
-    value: string
-    isCoinbase?: boolean
-    blockHeight?: number
-  }
+export interface WalletGive {
+  txid: string
+  platform: string
+  timestamp: Date
+  fromId: string
+  toId: string
+  value: string
+}
 
-  export type AccountUtxo = ParsedUtxo & {
-    userId: string
-  }
+export interface WalletKey {
+  signingKey: PrivateKey
+  address: Address
+  script: Script
+  scriptHex: string
+  scriptType: ScriptType
+  utxos: WalletParsedUtxo[]
+}
 
-  export type TxBroadcastResult = {
-    txid: string
-    amount: string
-  }
+export interface WalletTxBroadcastResult {
+  txid: string
+  amount: string
 }

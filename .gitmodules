@@ -1,3 +1,0 @@
-[submodule "submodules/lotus-lib"]
-	path = submodules/lotus-lib
-	url = git@github.com:LotusiaStewardship/lotus-lib.git

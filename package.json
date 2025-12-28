@@ -2,7 +2,7 @@
   "name": "lotus-bot",
   "version": "3.1.1",
   "description": "Chat bot for social media to use for giving Lotus XPI to other people",
-  "type": "commonjs",
+  "type": "module",
   "main": "index.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
@@ -12,7 +12,7 @@
   },
   "author": "Lotusia Stewardship",
   "dependencies": {
-    "@prisma/client": "6.18.0",
+    "@prisma/client": "6.19.1",
     "@temporalio/activity": "1.11.7",
     "@temporalio/client": "1.11.7",
     "@temporalio/worker": "1.11.7",
@@ -20,14 +20,14 @@
     "chronik-client": "0.19.0",
     "discord.js": "14.24.0",
     "dotenv": "16.4.7",
-    "lotus-lib": "file:submodules/lotus-lib",
     "telegraf": "4.16.3",
-    "twitter-api-v2": "1.27.0"
+    "twitter-api-v2": "1.27.0",
+    "xpi-ts": "^0.2.7"
   },
   "devDependencies": {
     "@types/node": "22.13.14",
     "prettier": "3.6.2",
-    "prisma": "6.18.0",
+    "prisma": "6.19.1",
     "ts-patch": "3.3.0",
     "typescript": "5.9.3",
     "typescript-eslint": "8.46.2",

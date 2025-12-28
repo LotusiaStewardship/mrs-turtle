@@ -1,6 +1,11 @@
 import { PrismaClient, Deposit } from '../prisma/prisma-client-js/client.js'
 import type { PlatformName } from './platforms/index.js'
-import type { Wallet } from '../util/types.js'
+import type {
+  WalletAccountUtxo,
+  WalletDeposit,
+  WalletGive,
+  WalletWithdrawal,
+} from '../util/types.js'
 
 enum PlatformUserTable {
   telegram = 'userTelegram',
@@ -164,9 +169,7 @@ export const write = {
    * @param {Wallet.AccountUtxo[]} utxos The UTXO set.
    * @returns The new deposits.
    */
-  reconcileDeposits: async (
-    utxos: Wallet.AccountUtxo[],
-  ): Promise<Deposit[]> => {
+  reconcileDeposits: async (utxos: WalletAccountUtxo[]): Promise<Deposit[]> => {
     return await prisma.$transaction(async tx => {
       const newDeposits: Deposit[] = []
       for (const utxo of utxos) {
@@ -203,7 +206,7 @@ export const write = {
     accountId: string
     userId: string
     secret: string
-    platform?: string
+    platform?: PlatformName
     platformId?: string
     mnemonic: string
     hdPrivKey: string
@@ -254,7 +257,7 @@ export const write = {
    * @param {Wallet.Deposit} data The deposit data.
    * @returns The new deposit.
    */
-  saveDeposit: async (data: Wallet.Deposit) => {
+  saveDeposit: async (data: WalletDeposit) => {
     const result = await prisma.deposit.create({
       data,
       select: {
@@ -288,14 +291,14 @@ export const write = {
    * Saves a new "give" transaction to the database.
    * @param data The give object
    */
-  saveGive: async (data: Wallet.Give): Promise<void> => {
+  saveGive: async (data: WalletGive): Promise<void> => {
     await prisma.give.create({ data })
   },
   /**
    * Saves a new withdrawal to the database.
    * @param {Wallet.Withdrawal} data The withdrawal data.
    */
-  saveWithdrawal: async (data: Wallet.Withdrawal): Promise<void> => {
+  saveWithdrawal: async (data: WalletWithdrawal): Promise<void> => {
     await prisma.withdrawal.create({ data })
   },
   /**

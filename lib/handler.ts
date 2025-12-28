@@ -2,8 +2,8 @@ import { EventEmitter } from 'node:events'
 import { PlatformName } from './platforms/index.js'
 import * as Util from '../util/index.js'
 import { BOT, TRANSACTION } from '../util/constants.js'
-import { Wallet } from '../util/types.js'
-import { WalletManager } from './wallet.js'
+import { WalletAccountUtxo, WalletTxBroadcastResult } from '../util/types.js'
+import { WalletManager, WalletTools } from './wallet.js'
 import * as db from './database.js'
 import { toAsyncIterable } from '../util/functions.js'
 
@@ -12,7 +12,7 @@ const WALLET = 'walletmanager'
 const DB = 'prisma'
 const MAIN = 'handler'
 
-const { MIN_OUTPUT_AMOUNT } = TRANSACTION
+const { MIN_OUTPUT_SATS } = TRANSACTION
 /**
  * Master class
  * Processes all platform commands
@@ -75,7 +75,7 @@ export class Handler extends EventEmitter {
    * Handle deposit received event from `WalletManager`
    * @param utxo - The deposit UTXO
    */
-  walletDepositReceived = async (utxo: Wallet.AccountUtxo) => {
+  walletDepositReceived = async (utxo: WalletAccountUtxo) => {
     try {
       await this.saveDeposit(utxo)
     } catch (e: any) {
@@ -147,8 +147,8 @@ export class Handler extends EventEmitter {
     const outSats = Util.toSats(value)
     const msg = `chatId ${chatId}: fromId ${fromId}: give: ${fromUsername} -> ${toId} (${toUsername}): ${outSats} sats`
     this.log(platform, `${msg}: command received`)
-    if (outSats < MIN_OUTPUT_AMOUNT) {
-      throw new Error(`${msg}: ERROR: minimum required: ${MIN_OUTPUT_AMOUNT}`)
+    if (outSats < MIN_OUTPUT_SATS) {
+      throw new Error(`${msg}: ERROR: minimum required: ${MIN_OUTPUT_SATS}`)
     }
     // Create account for fromId if not exist
     const { accountId: fromAccountId, userId: fromUserId } =
@@ -216,14 +216,15 @@ export class Handler extends EventEmitter {
     platformId: string,
     outAmount: string,
     outAddress: string,
-  ): Promise<Wallet.TxBroadcastResult | string> => {
+  ): Promise<WalletTxBroadcastResult | string> => {
     const msg = `${platformId}: withdraw: ${outAmount} -> ${outAddress}`
     this.log(platform, `${msg}: command received`)
+    // validate user-supplied data
     const outSats = Util.toSats(outAmount)
-    if (!WalletManager.isValidAddress(outAddress)) {
+    if (!WalletTools.isValidAddress(outAddress)) {
       return `invalid address: \`${outAddress}\``
-    } else if (outSats < MIN_OUTPUT_AMOUNT) {
-      return `withdraw minimum is ${Util.toXPI(MIN_OUTPUT_AMOUNT)} XPI`
+    } else if (outSats < MIN_OUTPUT_SATS) {
+      return `withdraw minimum is ${Util.toXPI(MIN_OUTPUT_SATS)} XPI`
     }
     const { accountId, userId } = await this.validateAndGetIds(
       platform,
@@ -433,7 +434,7 @@ export class Handler extends EventEmitter {
    * @param utxo - The deposit to save
    * @returns {Promise<void>}
    */
-  private saveDeposit = async (utxo: Wallet.AccountUtxo): Promise<void> => {
+  private saveDeposit = async (utxo: WalletAccountUtxo): Promise<void> => {
     try {
       if (
         // don't notify deposit on give txs
