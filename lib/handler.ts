@@ -415,7 +415,7 @@ export class Handler extends EventEmitter {
       const userId = Util.newUUID()
       const secret = Util.newUUID()
       const mnemonic = WalletManager.newMnemonic()
-      const hdPrivKey = WalletManager.newHDPrivateKey(mnemonic)
+      const hdPrivKey = mnemonic.toHDPrivateKey()
       const hdPubKey = hdPrivKey.hdPublicKey
       await db.write.saveAccount({
         accountId,
@@ -424,8 +424,8 @@ export class Handler extends EventEmitter {
         platform,
         platformId,
         mnemonic: mnemonic.toString(),
-        hdPrivKey: hdPrivKey.toString(),
-        hdPubKey: hdPubKey.toString(),
+        hdPrivKey: hdPrivKey.toBuffer(),
+        hdPubKey: hdPubKey.toBuffer(),
       })
       await this.wallet.loadKey({ accountId, userId, hdPrivKey })
       this.log(DB, `new account saved: ${accountId}`)
