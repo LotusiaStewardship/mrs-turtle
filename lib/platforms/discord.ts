@@ -147,11 +147,7 @@ export class Discord extends EventEmitter implements IDiscord {
       {
         name: 'backup',
         description: 'Back up the seed phrase for this platform',
-      },
-      {
-        name: 'ping',
-        description: 'pong',
-      },
+      }
     ]
     try {
       // this.client.on('ready', this._handleReady);
