@@ -1,6 +1,7 @@
 migrations/
 node_modules/
 prisma/
+psql_data/
 .output
 **/*.js
 .env
