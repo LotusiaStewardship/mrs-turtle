@@ -8,33 +8,30 @@ _Continuous Testing & Integration not implemented yet_
 
 ## Requirements
 
-- Ubuntu 24.04 or later
-- NodeJS 18.x (Recommend NodeJS repository for latest security updates: https://nodejs.org/en/download/package-manager/) (For Windows Admins: Make sure NodeJS is installed to the system $PATH)
-- TypeScript ^4.x (Installed during `npm install`) (For Windows Admins: Install this manually & globally - `npm install -g typescript`)
-- Prisma ^4.8.x (Installed during `npm install`)
-- PostgreSQL
+- Docker & Docker Compose Plugin
+- NodeJS 24+
 
-## Automatic Installation - Linux
+## Installation
 
-**Prerequisites**
+1. `git clone https://github.com/LotusiaStewardship/mrs-turtle`
+2. `cd mrs-turtle`
+3. `cp .env.example .env`
+4. Update .env with Platform API Keys, and Database Credentials:
+```env
+APIKEY_TELEGRAM='abc123'
+APIKEY_TWITTER='abc123'
+APIKEY_DISCORD='abc123'
+CLIENTID_DISCORD='abc123'
+# Comma Separated List of Guild IDs (Server IDs)
+GUILDID_DISCORD='123456789'
+...
+POSTGRES_USER=lotusbot
+POSTGRES_PASSWORD=generateALongSuperSecretPasswordHere
+POSTGRES_DB=lotusbot
+```
+5. Once you have API Keys, Bot Tokens, and the PostgreSQL information setup: `docker compose up -d`
 
-Please install the following packages on your system for the automatic installer to work:
-
-- git
-- postgresql
-
-To run the automated install, paste and execute the following command in your terminal: `curl https://github.com/LotusiaStewardship/lotus-bot/main/install.sh | sudo bash`
-
-After the installation completes, you will need to edit your `/opt/lotusbot/.env` file to fill in the appropriate values for your platform!
-
-The `install.sh` script will:
-
-- Clone this repository to `/opt/lotusbot` directory
-- Create a new system user with login disabled for the systemd service
-- Create the `.env` config file
-- Install NVM & NPM dependencies
-- Set up Prisma and PostgreSQL database
-- Install systemd service
+You can use `docker compose logs` to check the status of the bot. Start times may vary depending on database generation, upgrades, and node module updates.
 
 ## Runtime Notes
 
