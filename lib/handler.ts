@@ -1,3 +1,8 @@
+/**
+ * Copyright (c) 2024-2026 The Lotusia Stewardship
+ * Github: https://github.com/LotusiaStewardship
+ * License: MIT
+ */
 import { EventEmitter } from 'node:events'
 import { PlatformName } from './platforms/index.js'
 import * as Util from '../util/index.js'
@@ -42,15 +47,15 @@ export class Handler extends EventEmitter {
         const { accountId, userId } = BOT.USER
         const secret = Util.newUUID()
         const mnemonic = WalletManager.newMnemonic()
-        const hdPrivKey = WalletManager.newHDPrivateKey(mnemonic)
+        const hdPrivKey = mnemonic.toHDPrivateKey()
         const hdPubKey = hdPrivKey.hdPublicKey
         await db.write.saveAccount({
           accountId,
           userId,
           secret,
           mnemonic: mnemonic.toString(),
-          hdPrivKey: hdPrivKey.toString(),
-          hdPubKey: hdPubKey.toString(),
+          hdPrivKey: hdPrivKey.toBuffer(),
+          hdPubKey: hdPubKey.toBuffer(),
         })
         await this.wallet.loadKey({ accountId, userId, hdPrivKey })
         this.log(MAIN, `created and loaded bot wallet`)
@@ -410,7 +415,7 @@ export class Handler extends EventEmitter {
       const userId = Util.newUUID()
       const secret = Util.newUUID()
       const mnemonic = WalletManager.newMnemonic()
-      const hdPrivKey = WalletManager.newHDPrivateKey(mnemonic)
+      const hdPrivKey = mnemonic.toHDPrivateKey()
       const hdPubKey = hdPrivKey.hdPublicKey
       await db.write.saveAccount({
         accountId,
@@ -419,8 +424,8 @@ export class Handler extends EventEmitter {
         platform,
         platformId,
         mnemonic: mnemonic.toString(),
-        hdPrivKey: hdPrivKey.toString(),
-        hdPubKey: hdPubKey.toString(),
+        hdPrivKey: hdPrivKey.toBuffer(),
+        hdPubKey: hdPubKey.toBuffer(),
       })
       await this.wallet.loadKey({ accountId, userId, hdPrivKey })
       this.log(DB, `new account saved: ${accountId}`)
