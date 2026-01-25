@@ -569,9 +569,6 @@ export class WalletManager {
   }
   /** Generates a new 12-word mnemonic phrase */
   static newMnemonic = () => new Mnemonic()
-  /** Gets `HDPrivateKey` from mnemonic seed buffer */
-  static newHDPrivateKey = (mnemonic: Mnemonic) =>
-    HDPrivateKey.fromSeed(mnemonic.toSeed())
   /** Instantiate Prisma HDPrivateKey buffer as `HDPrivateKey` */
   static hdPrivKeyFromBuffer = (hdPrivKeyBuf: Buffer) =>
     new HDPrivateKey(hdPrivKeyBuf)

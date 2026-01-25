@@ -47,15 +47,15 @@ export class Handler extends EventEmitter {
         const { accountId, userId } = BOT.USER
         const secret = Util.newUUID()
         const mnemonic = WalletManager.newMnemonic()
-        const hdPrivKey = WalletManager.newHDPrivateKey(mnemonic)
+        const hdPrivKey = mnemonic.toHDPrivateKey()
         const hdPubKey = hdPrivKey.hdPublicKey
         await db.write.saveAccount({
           accountId,
           userId,
           secret,
           mnemonic: mnemonic.toString(),
-          hdPrivKey: hdPrivKey.toString(),
-          hdPubKey: hdPubKey.toString(),
+          hdPrivKey: hdPrivKey.toBuffer(),
+          hdPubKey: hdPubKey.toBuffer(),
         })
         await this.wallet.loadKey({ accountId, userId, hdPrivKey })
         this.log(MAIN, `created and loaded bot wallet`)

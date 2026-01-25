@@ -78,13 +78,13 @@ export const read = {
    * Gets the user wallet keys for all users.
    * @returns The user wallet keys for all users.
    */
-  getUserWalletKeys: async () => {
+  getUserWallets: async () => {
     const result = await prisma.user.findMany({
       select: {
         id: true,
         accountId: true,
         key: {
-          select: { hdPrivKey: true },
+          select: { mnemonic: true },
         },
       },
     })
@@ -92,7 +92,7 @@ export const read = {
       return {
         accountId: user.accountId,
         userId: user.id,
-        hdPrivKey: user?.key?.hdPrivKey,
+        seedPhrase: user?.key?.mnemonic,
       }
     })
   },
@@ -214,8 +214,8 @@ export const write = {
     platform?: PlatformName
     platformId?: string
     mnemonic: string
-    hdPrivKey: string
-    hdPubKey: string
+    hdPrivKey: Buffer
+    hdPubKey: Buffer
   }) => {
     const privKeyBytes = Buffer.from(hdPrivKey)
     const pubKeyBytes = Buffer.from(hdPubKey)

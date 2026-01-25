@@ -17,6 +17,7 @@ import {
 import { NativeConnection, Worker } from '@temporalio/worker'
 import { Activities, LocalActivities } from './temporal/index.js'
 import type { Temporal } from '../util/types.js'
+import { Mnemonic } from 'xpi-ts/lib/bitcore'
 
 // Constants used for logging purposes
 const WALLET = 'walletmanager'
@@ -93,15 +94,16 @@ export default class LotusBot {
        * - Load all WalletKeys into WalletManager
        */
       try {
-        const keys = await db.read.getUserWalletKeys()
+        const keys = await db.read.getUserWallets()
         await this.wallet.init(
           keys.map(key => {
-            const { accountId, userId, hdPrivKey } = key
+            const { accountId, userId, seedPhrase } = key
+            const mnemonic = new Mnemonic(seedPhrase)
             return {
               accountId,
               userId,
               hdPrivKey: WalletManager.hdPrivKeyFromBuffer(
-                Buffer.from(hdPrivKey),
+                mnemonic.toHDPrivateKey().toBuffer(),
               ),
             }
           }),
