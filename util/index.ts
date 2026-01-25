@@ -1,3 +1,8 @@
+/**
+ * Copyright (c) 2024-2026 The Lotusia Stewardship
+ * Github: https://github.com/LotusiaStewardship
+ * License: MIT
+ */
 import * as Constants from './constants.js'
 import { randomUUID } from 'node:crypto'
 

@@ -1,4 +1,9 @@
 /**
+ * Copyright (c) 2024-2026 The Lotusia Stewardship
+ * Github: https://github.com/LotusiaStewardship
+ * License: MIT
+ */
+/**
  * Async generator to iterate over a collection in chunks
  * @param collection - The collection to iterate over
  * @param chunkSize - The size of each chunk

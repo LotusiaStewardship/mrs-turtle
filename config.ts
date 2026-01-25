@@ -1,3 +1,8 @@
+/**
+ * Copyright (c) 2024-2026 The Lotusia Stewardship
+ * Github: https://github.com/LotusiaStewardship
+ * License: MIT
+ */
 import { config as dotenv } from 'dotenv'
 
 export type ParsedConfig = {

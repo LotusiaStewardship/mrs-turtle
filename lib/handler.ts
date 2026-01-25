@@ -1,3 +1,8 @@
+/**
+ * Copyright (c) 2024-2026 The Lotusia Stewardship
+ * Github: https://github.com/LotusiaStewardship
+ * License: MIT
+ */
 import { EventEmitter } from 'node:events'
 import { PlatformName } from './platforms/index.js'
 import * as Util from '../util/index.js'

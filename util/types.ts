@@ -1,3 +1,8 @@
+/**
+ * Copyright (c) 2024-2025 The Lotusia Stewardship
+ * Github: https://github.com/LotusiaStewardship
+ * License: MIT
+ */
 import type { Address, PrivateKey, Script } from 'xpi-ts/lib/bitcore'
 import type { ScriptType } from 'chronik-client'
 import type { PlatformName } from '../lib/platforms/index.js'

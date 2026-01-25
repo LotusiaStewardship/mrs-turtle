@@ -1,3 +1,8 @@
+/**
+ * Copyright (c) 2024-2026 The Lotusia Stewardship
+ * Github: https://github.com/LotusiaStewardship
+ * License: MIT
+ */
 import { PrismaClient, Deposit } from '../prisma/prisma-client-js/client.js'
 import type { PlatformName } from './platforms/index.js'
 import type {

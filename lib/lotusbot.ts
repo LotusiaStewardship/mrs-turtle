@@ -1,3 +1,8 @@
+/**
+ * Copyright (c) 2024-2026 The Lotusia Stewardship
+ * Github: https://github.com/LotusiaStewardship
+ * License: MIT
+ */
 import { Platforms, PlatformName, Platform } from './platforms/index.js'
 import config from '../config.js'
 import { WalletManager } from './wallet.js'
