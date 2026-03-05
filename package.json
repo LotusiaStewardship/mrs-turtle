@@ -1,6 +1,6 @@
 {
-  "name": "lotus-bot",
-  "version": "3.1.1",
+  "name": "mrs-turtle",
+  "version": "3.2.0",
   "description": "Chat bot for social media to use for giving Lotus XPI to other people",
   "type": "module",
   "main": "index.js",
